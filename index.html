@@ -10,7 +10,47 @@
   <link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/192/ffffff/cash-register.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
-  </head>
+  <style>
+    #videoContainer {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      overflow: hidden;
+      border-radius: 1rem;
+      background: #000;
+    }
+    #videoElement {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .scan-area {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 65%;
+      border: 2px dashed rgba(245, 158, 11, 0.7);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+    .laser {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: scan 2s infinite linear;
+      pointer-events: none;
+    }
+    @keyframes scan {
+      0% { top: 20%; opacity: 0; }
+      50% { opacity: 1; }
+      100% { top: 80%; opacity: 0; }
+    }
+  </style>
+</head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-12">
 
   <header class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
@@ -127,7 +167,6 @@
   </section>
     <script>
     let codeReader = null;
-    let currentStream = null;
     let track = null;
     let torchOn = false;
     let currentTab = 'venta';
@@ -138,10 +177,6 @@
       "2": { name: "Bolsa de Hielo Grande", cost: 1.00, price: 2.00 }
     };
     let cart = [];
-
-    const nativeBarcodeDetector = ('BarcodeDetector' in window) 
-      ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] }) 
-      : null;
 
     function beep() {
       try {
@@ -211,58 +246,54 @@
       codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
       try {
-        const constraints = {
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { min: 1280, ideal: 1920 },
-            height: { min: 720, ideal: 1080 }
-          },
-          audio: false
-        };
-
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = currentStream;
-        await video.play();
-
-        track = currentStream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-        if (capabilities.torch) {
-          document.getElementById('btnTorch').classList.remove('hidden');
+        const videoInputDevices = await codeReader.listVideoInputDevices();
+        
+        let selectedDeviceId = undefined;
+        const backCamera = videoInputDevices.find(device => {
+          const label = device.label.toLowerCase();
+          return label.includes('back') || label.includes('trasera') || label.includes('environment');
+        });
+        
+        if (backCamera) {
+          selectedDeviceId = backCamera.deviceId;
+        } else if (videoInputDevices.length > 0) {
+          selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
         }
 
-        if (nativeBarcodeDetector) {
-          setInterval(async () => {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-              try {
-                const barcodes = await nativeBarcodeDetector.detect(video);
-                if (barcodes.length > 0) {
-                  handleScannedBarcode(barcodes[0].rawValue);
-                }
-              } catch (e) {}
-            }
-          }, 150);
-        }
-
-        codeReader.decodeFromVideoElement(video, (result) => {
+        await codeReader.decodeFromVideoDevice(selectedDeviceId, 'videoElement', (result, err) => {
           if (result) {
             handleScannedBarcode(result.getText());
           }
         });
 
+        setTimeout(() => {
+          if (video.srcObject) {
+            const stream = video.srcObject;
+            track = stream.getVideoTracks()[0];
+            if (track && track.getCapabilities && track.getCapabilities().torch) {
+              const btn = document.getElementById('btnTorch');
+              if (btn) btn.classList.remove('hidden');
+            }
+          }
+        }, 1200);
+
       } catch (err) {
-        codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
-          if (result) handleScannedBarcode(result.getText());
-        });
+        console.error("Error al iniciar escáner:", err);
+        if (status) {
+          status.innerHTML = '<span class="text-rose-400">Error en cámara. Revisa permisos.</span>';
+        }
       }
     }
 
     async function toggleTorch() {
-      if (track && track.applyConstraints) {
-        torchOn = !torchOn;
-        try {
-          await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-          document.getElementById('btnTorch').textContent = torchOn ? "🔦 Apagar" : "🔦 Linterna";
-        } catch (e) {}
+      if (!track) return;
+      torchOn = !torchOn;
+      try {
+        await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+        const btn = document.getElementById('btnTorch');
+        if (btn) btn.textContent = torchOn ? '🔦 Apagar' : '🔦 Linterna';
+      } catch (e) {
+        console.error(e);
       }
     }
 
@@ -303,7 +334,7 @@
 
     function handleScannedBarcode(code) {
       const now = Date.now();
-      if (code === lastCode && (now - lastTime) < 1300) return;
+      if (code === lastCode && (now - lastTime) < 1500) return;
       lastCode = code;
       lastTime = now;
       beep();
@@ -465,9 +496,9 @@
     }
   </script>
   <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
   </script>
 </body>
 </html>

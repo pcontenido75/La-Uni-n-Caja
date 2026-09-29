@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistema 1 - Licorería La Unión M&J</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    #reader video { object-fit: cover; border-radius: 12px; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-20">
+
+  <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center gap-2">
+      <div class="bg-amber-500 text-slate-900 font-black p-1.5 rounded-lg text-lg leading-none">S1</div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight leading-none text-white">La Unión M&J</h1>
+        <p class="text-[11px] text-slate-400">Punto de Venta Móvil</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-700">
+      <span class="text-xs text-amber-400 font-semibold">Tasa Bs:</span>
+      <input id="exchangeRate" type="number" step="0.1" class="w-16 bg-transparent text-right text-xs font-bold text-white outline-none" value="65.0" onchange="updateRate()">
+    </div>
+  </header>
+
+  <div class="grid grid-cols-2 bg-slate-800/60 p-1 m-3 rounded-xl border border-slate-700/80">
+    <button id="tabVentaBtn" onclick="switchTab('venta')" class="py-2 text-sm font-bold rounded-lg bg-amber-500 text-slate-950 shadow-md transition-all flex items-center justify-center gap-2">
+      <i data-lucide="shopping-cart" class="w-4 h-4"></i> Caja / Venta
+    </button>
+    <button id="tabInventarioBtn" onclick="switchTab('inventario')" class="py-2 text-sm font-semibold rounded-lg text-slate-300 transition-all flex items-center justify-center gap-2">
+      <i data-lucide="package-plus" class="w-4 h-4"></i> Cargar Productos
+    </button>
+  </div>
+
+  <section class="px-3 mb-2">
+    <div class="bg-slate-800/80 rounded-2xl p-2.5 border border-slate-700">
+      <div class="flex items-center justify-between mb-2 px-1">
+        <span class="text-xs font-semibold text-slate-300 flex items-center gap-1">
+          <i data-lucide="scan-barcode" class="w-4 h-4 text-amber-400"></i> Escáner de Barra
+        </span>
+        <button id="toggleScannerBtn" onclick="toggleCamera()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-full text-slate-200 font-medium">
+          Iniciar Cámara
+        </button>
+      </div>
+
+      <div id="reader-container" class="relative hidden overflow-hidden rounded-xl bg-black border border-slate-600 aspect-video flex items-center justify-center">
+        <div id="reader" class="w-full"></div>
+        <div class="absolute inset-x-8 top-1/2 -translate-y-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_#ef4444] pointer-events-none"></div>
+      </div>
+      <div id="scanFeedback" class="text-center text-xs text-slate-400 py-1 italic">
+        Cámara inactiva. Toca "Iniciar Cámara" para escanear.
+      </div>
+    </div>
+  </section>
+
+  <main id="viewVenta" class="px-3 flex-1 flex flex-col">
+    <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-3 flex-1 flex flex-col min-h-[220px]">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-700 text-xs text-slate-400 font-semibold uppercase tracking-wider">
+        <span>Producto</span>
+        <span>Cant. / Precio</span>
+      </div>
+
+      <div id="cartItems" class="flex-1 divide-y divide-slate-700/50 overflow-y-auto max-h-60 py-1">
+        <div class="text-center text-slate-500 text-sm py-8">
+          Escanea una botella o código para empezar la venta.
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-700 space-y-1.5 bg-slate-800/90 rounded-xl p-2.5 mt-2">
+        <div class="flex justify-between items-baseline">
+          <span class="text-sm text-slate-300 font-medium">Total Divisas:</span>
+          <span class="text-2xl font-black text-amber-400">$<span id="totalUSD">0.00</span></span>
+        </div>
+        <div class="flex justify-between items-baseline text-xs text-slate-400">
+          <span>Total en Bolívares:</span>
+          <span class="text-sm font-bold text-slate-200">Bs <span id="totalBS">0.00</span></span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button onclick="clearCart()" class="py-2.5 px-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Cancelar Venta
+        </button>
+        <button onclick="checkout()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="check-circle" class="w-4 h-4"></i> Cobrar
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <section id="viewInventario" class="px-3 flex-1 flex flex-col hidden space-y-3">
+    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3.5 space-y-3 shadow-lg">
+      <h2 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+        <i data-lucide="barcode" class="w-4 h-4"></i> Registrar / Editar Producto
+      </h2>
+
+      <div class="space-y-2">
+        <div>
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código de Barra</label>
+          <div class="flex gap-2">
+            <input id="prodCode" type="text" placeholder="Escanea o escribe el código" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:border-amber-500 outline-none">
+            <button onclick="searchProductManual()" class="bg-slate-700 px-3 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-600">Buscar</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Bebida</label>
+          <input id="prodName" type="text" placeholder="Ej. Ron Santa Teresa Linaje 0.75L" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Costo ($ USD)</label>
+            <input id="prodCost" type="number" step="0.01" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold text-amber-400 block mb-0.5">Precio Venta ($ USD)</label>
+            <input id="prodPrice" type="number" step="0.01" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-amber-300 focus:border-amber-500 outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="saveProduct()" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+          <i data-lucide="save" class="w-4 h-4"></i> Guardar Producto
+        </button>
+        <button onclick="resetProductForm()" class="bg-slate-700 text-slate-300 px-3 rounded-xl text-xs font-medium">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-xs font-bold text-slate-300">Catálogo Registrado (<span id="totalProductsCount">0</span>)</h3>
+        <button onclick="exportCatalog()" class="text-[11px] text-amber-400 hover:underline flex items-center gap-1">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Respaldar
+        </button>
+      </div>
+      <div id="catalogList" class="flex-1 overflow-y-auto max-h-56 divide-y divide-slate-700/60 text-xs"></div>
+    </div>
+  </section>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 900, type = 'sine', duration = 0.08) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.value = 0.15;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    let currentTab = 'venta';
+    let exchangeRate = parseFloat(localStorage.getItem('s1_rate')) || 65.0;
+    let catalog = JSON.parse(localStorage.getItem('s1_catalog')) || {
+      "7591011000123": { name: "Cerveza Polar Pilsen Lata 355ml", cost: 0.90, price: 1.25 },
+      "7591011000456": { name: "Ron Santa Teresa Linaje 0.75L", cost: 12.00, price: 16.50 },
+      "7591011000789": { name: "Whisky Black & White 0.75L", cost: 11.50, price: 15.00 }
+    };
+    let cart = [];
+    let html5QrCode = null;
+    let isCameraRunning = false;
+    let lastScannedCode = null;
+    let lastScanTime = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('exchangeRate').value = exchangeRate;
+      renderCatalog();
+      lucide.createIcons();
+    });
+
+    function updateRate() {
+      const val = parseFloat(document.getElementById('exchangeRate').value);
+      if (!isNaN(val) && val > 0) {
+        exchangeRate = val;
+        localStorage.setItem('s1_rate', exchangeRate);
+        renderCart();
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const btnV = document.getElementById('tabVentaBtn');
+      const btnI = document.getElementById('tabInventarioBtn');
+      const viewV = document.getElementById('viewVenta');
+      const viewI = document.getElementById('viewInventario');
+
+      if (tab === 'venta') {
+        btnV.className = "py-2 text-sm font-bold rounded-lg bg-amber-500 text-slate-950 shadow-md transition-all flex items-center justify-center gap-2";
+        btnI.className = "py-2 text-sm font-semibold rounded-lg text-slate-300 transition-all flex items-center justify-center gap-2";
+        viewV.classList.remove('hidden');
+        viewI.classList.add('hidden');
+      } else {
+        btnI.className = "py-2 text-sm font-bold rounded-lg bg-amber-500 text-slate-950 shadow-md transition-all flex items-center justify-center gap-2";
+        btnV.className = "py-2 text-sm font-semibold rounded-lg text-slate-300 transition-all flex items-center justify-center gap-2";
+        viewI.classList.remove('hidden');
+        viewV.classList.add('hidden');
+      }
+    }
+
+    async function toggleCamera() {
+      const btn = document.getElementById('toggleScannerBtn');
+      const container = document.getElementById('reader-container');
+      const feedback = document.getElementById('scanFeedback');
+
+      if (isCameraRunning) {
+        if (html5QrCode) {
+          await html5QrCode.stop();
+          html5QrCode = null;
+        }
+        isCameraRunning = false;
+        container.classList.add('hidden');
+        btn.textContent = 'Iniciar Cámara';
+        feedback.textContent = 'Cámara inactiva. Toca "Iniciar Cámara" para escanear.';
+        return;
+      }
+
+      container.classList.remove('hidden');
+      feedback.textContent = 'Alinea el código de barras en el recuadro rojo.';
+      btn.textContent = 'Apagar Cámara';
+      html5QrCode = new Html5Qrcode("reader");
+
+      const config = {
+        fps: 15,
+        qrbox: { width: 250, height: 140 },
+        aspectRatio: 1.777778
+      };
+
+      try {
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onScanSuccess,
+          () => {}
+        );
+        isCameraRunning = true;
+      } catch (err) {
+        feedback.textContent = "Error al iniciar cámara: Verifica permisos.";
+        btn.textContent = 'Iniciar Cámara';
+        container.classList.add('hidden');
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastScannedCode && now - lastScanTime < 1200) {
+        return;
+      }
+      lastScannedCode = decodedText;
+      lastScanTime = now;
+      playBeep();
+
+      if (currentTab === 'venta') {
+        processScanInVenta(decodedText);
+      } else {
+        processScanInCatalog(decodedText);
+      }
+    }
+
+    function processScanInVenta(code) {
+      const feedback = document.getElementById('scanFeedback');
+      if (catalog[code]) {
+        const prod = catalog[code];
+        const existing = cart.find(item => item.code === code);
+        if (existing) {
+          existing.qty += 1;
+        } else {
+          cart.push({ code: code, name: prod.name, price: prod.price, qty: 1 });
+        }
+        feedback.innerHTML = `<span class="text-emerald-400 font-bold">✔ Agregado: ${prod.name} ($${prod.price.toFixed(2)})</span>`;
+        renderCart();
+      } else {
+        playBeep(400, 'square', 0.2);
+        feedback.innerHTML = `<span class="text-amber-400 font-bold">⚠ Producto no registrado (${code})</span>`;
+        if (confirm(`El código [${code}] no está registrado. ¿Deseas darlo de alta ahora?`)) {
+          switchTab('inventario');
+          document.getElementById('prodCode').value = code;
+          document.getElementById('prodName').focus();
+        }
+      }
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItems');
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-500 text-xs py-8">Escanea una botella o código para empezar la venta.</div>`;
+        document.getElementById('totalUSD').textContent = "0.00";
+        document.getElementById('totalBS').textContent = "0.00";
+        return;
+      }
+
+      let total = 0;
+      container.innerHTML = cart.map((item, idx) => {
+        const subtotal = item.price * item.qty;
+        total += subtotal;
+        return `
+          <div class="py-2 flex items-center justify-between gap-2">
+            <div class="flex-1 truncate">
+              <p class="font-bold text-xs text-white truncate">${item.name}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${item.code} | $${item.price.toFixed(2)} c/u</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="changeQty(${idx}, -1)" class="w-6 h-6 rounded bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center">-</button>
+              <span class="w-5 text-center font-bold text-xs text-amber-300">${item.qty}</span>
+              <button onclick="changeQty(${idx}, 1)" class="w-6 h-6 rounded bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center">+</button>
+            </div>
+            <div class="text-right min-w-[50px]">
+              <span class="font-bold text-xs text-white">$${subtotal.toFixed(2)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('totalUSD').textContent = total.toFixed(2);
+      document.getElementById('totalBS').textContent = (total * exchangeRate).toFixed(2);
+    }
+
+    function changeQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+      }
+      renderCart();
+    }
+
+    function clearCart() {
+      if (cart.length === 0) return;
+      if (confirm("¿Limpiar la venta actual?")) {
+        cart = [];
+        renderCart();
+      }
+    }
+
+    function checkout() {
+      if (cart.length === 0) {
+        alert("El carrito está vacío. Escanea algún producto.");
+        return;
+      }
+      const totalUSD = document.getElementById('totalUSD').textContent;
+      const totalBS = document.getElementById('totalBS').textContent;
+      
+      const msg = `VENTA TOTAL:\nTotal: $${totalUSD}\nBolívares: Bs ${totalBS}\n\n¿Deseas cerrar y registrar esta venta?`;
+      if (confirm(msg)) {
+        playBeep(1200, 'sine', 0.15);
+        alert("✅ Venta registrada con éxito.");
+        cart = [];
+        renderCart();
+      }
+    }
+
+    function processScanInCatalog(code) {
+      document.getElementById('prodCode').value = code;
+      const feedback = document.getElementById('scanFeedback');
+      if (catalog[code]) {
+        const prod = catalog[code];
+        document.getElementById('prodName').value = prod.name;
+        document.getElementById('prodCost').value = prod.cost || '';
+        document.getElementById('prodPrice').value = prod.price;
+        feedback.innerHTML = `<span class="text-amber-400">Código cargado. Puedes editar el precio y guardar.</span>`;
+      } else {
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodCost').value = '';
+        document.getElementById('prodPrice').value = '';
+        document.getElementById('prodName').focus();
+        feedback.innerHTML = `<span class="text-emerald-400">Nuevo código detectado. Ingresa los datos y guarda.</span>`;
+      }
+    }
+
+    function searchProductManual() {
+      const code = document.getElementById('prodCode').value.trim();
+      if (!code) return;
+      processScanInCatalog(code);
+    }
+
+    function saveProduct() {
+      const code = document.getElementById('prodCode').value.trim();
+      const name = document.getElementById('prodName').value.trim();
+      const cost = parseFloat(document.getElementById('prodCost').value) || 0;
+      const price = parseFloat(document.getElementById('prodPrice').value);
+
+      if (!code) {
+        alert("Por favor escanea o ingresa un código de barra.");
+        return;
+      }
+      if (!name) {
+        alert("Por favor ingresa el nombre de la bebida.");
+        return;
+      }
+      if (isNaN(price) || price <= 0) {
+        alert("Por favor ingresa un precio de venta válido.");
+        return;
+      }
+
+      catalog[code] = { name, cost, price };
+      localStorage.setItem('s1_catalog', JSON.stringify(catalog));
+      playBeep(1100, 'sine', 0.1);
+      alert(`Producto guardado: ${name}`);
+      resetProductForm();
+      renderCatalog();
+    }
+
+    function resetProductForm() {
+      document.getElementById('prodCode').value = '';
+      document.getElementById('prodName').value = '';
+      document.getElementById('prodCost').value = '';
+      document.getElementById('prodPrice').value = '';
+    }
+
+    function deleteProduct(code) {
+      if (confirm(`¿Eliminar producto con código ${code}?`)) {
+        delete catalog[code];
+        localStorage.setItem('s1_catalog', JSON.stringify(catalog));
+        renderCatalog();
+      }
+    }
+
+    function renderCatalog() {
+      const list = document.getElementById('catalogList');
+      const codes = Object.keys(catalog);
+      document.getElementById('totalProductsCount').textContent = codes.length;
+
+      if (codes.length === 0) {
+        list.innerHTML = `<div class="text-center py-4 text-slate-500">No hay productos guardados.</div>`;
+        return;
+      }
+
+      list.innerHTML = codes.map(code => {
+        const item = catalog[code];
+        return `
+          <div class="py-2 flex items-center justify-between">
+            <div class="truncate pr-2">
+              <p class="font-semibold text-slate-200 truncate">${item.name}</p>
+              <p class="text-[10px] text-slate-400 font-mono">${code} | Costo: $${item.cost ? item.cost.toFixed(2) : '0.00'}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-amber-400">$${item.price.toFixed(2)}</span>
+              <button onclick="delet

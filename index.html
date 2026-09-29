@@ -1,18 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>La Unión M&J - Caja POS</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
-  <style>
-    body { -webkit-tap-highlight-color: transparent; }
-    #videoContainer { position: relative; background: #000; overflow: hidden; border-radius: 16px; }
-    #videoElement { width: 100%; height: 190px; object-fit: cover; }
-    .laser { position: absolute; top: 50%; left: 5%; right: 5%; height: 2px; background: #ef4444; box-shadow: 0 0 10px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
-    .scan-area { position: absolute; top: 20%; bottom: 20%; left: 8%; right: 8%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
-  </style>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/192/ffffff/cash-register.png">
+<link rel="apple-touch-icon" href="https://img.icons8.com/ios-filled/192/ffffff/cash-register.png">
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-12">
 
@@ -466,6 +458,11 @@
         `;
       }).join('');
     }
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
   </script>
 </body>
 </html>

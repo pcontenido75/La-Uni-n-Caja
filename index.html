@@ -11,7 +11,7 @@
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     #videoContainer { position: relative; background: #000; overflow: hidden; border-radius: 16px; }
-    #videoElement { width: 100%; height: 180px; object-fit: cover; }
+    #videoElement { width: 100%; height: 185px; object-fit: cover; }
     .laser { position: absolute; top: 50%; left: 5%; right: 5%; height: 2px; background: #ef4444; box-shadow: 0 0 10px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
     .scan-area { position: absolute; top: 15%; bottom: 15%; left: 8%; right: 8%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
   </style>
@@ -87,30 +87,30 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-2 mt-2">
-        <button onclick="resetCart()" class="py-2.5 px-3 bg-slate-700 rounded-xl text-xs font-bold text-slate-300">Limpiar</button>
+        <button onclick="resetCart()" class="py-2.5 px-3 bg-slate-700 rounded-xl text-xs font-bold text-slate-300">Limpiar Todo</button>
         <button onclick="finishSale()" class="py-2.5 px-3 bg-emerald-600 rounded-xl text-xs font-black text-white shadow-lg">COBRAR</button>
       </div>
     </div>
   </div>
 
-  <!-- VISTA 2: AGREGAR PRODUCTOS -->
+  <!-- VISTA 2: AGREGAR PRODUCTOS (FORMULARIO EXACTO COMO ANTES) -->
   <div id="viewCarga" class="px-3 flex flex-col space-y-3" style="display: none;">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3.5 space-y-3">
       <div class="flex justify-between items-center">
-        <p class="text-xs text-amber-400 font-bold uppercase">Registrar en la Nube</p>
+        <p class="text-xs text-amber-400 font-bold uppercase">Pasa una botella o ingresa manual</p>
         <button onclick="generarCodigoSinBarra()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-amber-300 px-2 py-0.5 rounded-lg border border-slate-600">
-          ⚡ Sin Código de Barra
+          ⚡ Sin Código
         </button>
       </div>
 
       <div class="space-y-2">
         <div>
           <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código Escaneado</label>
-          <input id="inCode" type="text" placeholder="Escanea o escribe número..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
+          <input id="inCode" type="text" placeholder="Se llena solo al escanear..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Bebida</label>
-          <input id="inName" type="text" placeholder="Ej. Natuchips Platanitos / Ron Cacique" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Licor / Producto</label>
+          <input id="inName" type="text" placeholder="Ej. Natuchips Platanitos 150gr / Polar" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -124,11 +124,11 @@
         </div>
       </div>
       <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">
-        GUARDAR PARA TODOS LOS CELULARES
+        GUARDAR EN EL CATÁLOGO
       </button>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col">
-      <span class="text-xs font-bold text-slate-300 mb-2">Inventario en la Nube (<span id="countStock">0</span>)</span>
+      <span class="text-xs font-bold text-slate-300 mb-2">Catálogo Guardado (<span id="countStock">0</span>)</span>
       <div id="stockList" class="overflow-y-auto max-h-48 divide-y divide-slate-700/60 text-xs"></div>
     </div>
   </div>
@@ -207,13 +207,13 @@
       if (tab === 'venta') {
         tV.className = "py-2.5 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
         tC.className = "py-2.5 text-xs font-semibold rounded-lg text-slate-300";
-        vV.style.display = "flex";
-        vC.style.display = "none";
+        vV.style.setProperty("display", "flex", "important");
+        vC.style.setProperty("display", "none", "important");
       } else {
         tC.className = "py-2.5 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
         tV.className = "py-2.5 text-xs font-semibold rounded-lg text-slate-300";
-        vV.style.display = "none";
-        vC.style.display = "flex";
+        vV.style.setProperty("display", "none", "important");
+        vC.style.setProperty("display", "flex", "important");
       }
     }
 

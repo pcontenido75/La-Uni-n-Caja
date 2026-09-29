@@ -11,9 +11,9 @@
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     #videoContainer { position: relative; background: #000; overflow: hidden; border-radius: 16px; }
-    #videoElement { width: 100%; height: 190px; object-fit: cover; }
+    #videoElement { width: 100%; height: 180px; object-fit: cover; }
     .laser { position: absolute; top: 50%; left: 5%; right: 5%; height: 2px; background: #ef4444; box-shadow: 0 0 10px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
-    .scan-area { position: absolute; top: 20%; bottom: 20%; left: 8%; right: 8%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
+    .scan-area { position: absolute; top: 15%; bottom: 15%; left: 8%; right: 8%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-12">
@@ -23,7 +23,7 @@
       <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-sm">S1</span>
       <div>
         <h1 class="text-sm font-bold text-white leading-tight">La Unión M&J</h1>
-        <p class="text-[10px] text-emerald-400 font-bold" id="cloudStatus">● Conectando a la Nube...</p>
+        <p class="text-[10px] text-emerald-400 font-bold" id="cloudStatus">● Nube Activa</p>
       </div>
     </div>
     <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
@@ -33,10 +33,10 @@
   </header>
 
   <div class="grid grid-cols-2 bg-slate-800 p-1 mx-3 my-2 rounded-xl border border-slate-700">
-    <button id="tabVenta" onclick="switchView('venta')" class="py-2 text-xs font-black rounded-lg bg-amber-500 text-slate-950">
+    <button id="tabVenta" onclick="switchView('venta')" class="py-2.5 text-xs font-black rounded-lg bg-amber-500 text-slate-950">
       🛒 CAJA / VENTA
     </button>
-    <button id="tabCarga" onclick="switchView('carga')" class="py-2 text-xs font-semibold rounded-lg text-slate-300">
+    <button id="tabCarga" onclick="switchView('carga')" class="py-2.5 text-xs font-semibold rounded-lg text-slate-300">
       📦 AGREGAR PRODUCTOS
     </button>
   </div>
@@ -49,7 +49,7 @@
         <div class="scan-area"></div>
       </div>
       <div class="flex items-center justify-between mt-2 px-1 text-[11px]">
-        <span id="scanStatus" class="text-emerald-400 font-semibold">● Escáner continuo activo</span>
+        <span id="scanStatus" class="text-emerald-400 font-semibold">● Escáner activo</span>
         <button id="btnTorch" onclick="toggleTorch()" class="bg-slate-700 px-2.5 py-1 rounded-lg text-amber-300 font-bold hidden">
           🔦 Linterna
         </button>
@@ -57,7 +57,8 @@
     </div>
   </section>
 
-  <main id="viewVenta" class="px-3 flex-1 flex flex-col space-y-2">
+  <!-- VISTA 1: CAJA / VENTA -->
+  <div id="viewVenta" class="px-3 flex flex-col space-y-2">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-2 flex gap-2">
       <input id="manualCodeInput" type="text" placeholder="Código o nombre (ej. 1, Polar...)" 
              class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500"
@@ -67,12 +68,12 @@
       </button>
     </div>
 
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col">
       <div class="flex justify-between items-center pb-2 border-b border-slate-700 text-[11px] text-slate-400 font-bold uppercase">
         <span>Producto</span>
         <span>Cant. / Total</span>
       </div>
-      <div id="cartList" class="flex-1 divide-y divide-slate-700/60 overflow-y-auto max-h-44 py-1">
+      <div id="cartList" class="divide-y divide-slate-700/60 overflow-y-auto max-h-44 py-1">
         <div class="text-center text-slate-500 text-xs py-6">Pasa el producto por la cámara o escribe su código arriba.</div>
       </div>
       <div class="mt-2 pt-2 border-t border-slate-700 bg-slate-900/70 p-2.5 rounded-xl space-y-1">
@@ -86,13 +87,14 @@
         </div>
       </div>
       <div class="grid grid-cols-2 gap-2 mt-2">
-        <button onclick="resetCart()" class="py-2.5 px-3 bg-slate-700 rounded-xl text-xs font-bold text-slate-300">Limpiar Todo</button>
+        <button onclick="resetCart()" class="py-2.5 px-3 bg-slate-700 rounded-xl text-xs font-bold text-slate-300">Limpiar</button>
         <button onclick="finishSale()" class="py-2.5 px-3 bg-emerald-600 rounded-xl text-xs font-black text-white shadow-lg">COBRAR</button>
       </div>
     </div>
-  </main>
+  </div>
 
-  <section id="viewCarga" class="px-3 flex-1 flex flex-col hidden space-y-3">
+  <!-- VISTA 2: AGREGAR PRODUCTOS -->
+  <div id="viewCarga" class="px-3 flex flex-col space-y-3" style="display: none;">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3.5 space-y-3">
       <div class="flex justify-between items-center">
         <p class="text-xs text-amber-400 font-bold uppercase">Registrar en la Nube</p>
@@ -103,12 +105,12 @@
 
       <div class="space-y-2">
         <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código (Escanear o escribir número)</label>
-          <input id="inCode" type="text" placeholder="Ej. 1 para Caja de Cerveza o escanea..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código Escaneado</label>
+          <input id="inCode" type="text" placeholder="Escanea o escribe número..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Licor</label>
-          <input id="inName" type="text" placeholder="Ej. Caja Polar Pilsen 36u / Ron Cacique" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Bebida</label>
+          <input id="inName" type="text" placeholder="Ej. Natuchips Platanitos / Ron Cacique" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -125,11 +127,11 @@
         GUARDAR PARA TODOS LOS CELULARES
       </button>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col">
       <span class="text-xs font-bold text-slate-300 mb-2">Inventario en la Nube (<span id="countStock">0</span>)</span>
-      <div id="stockList" class="flex-1 overflow-y-auto max-h-48 divide-y divide-slate-700/60 text-xs"></div>
+      <div id="stockList" class="overflow-y-auto max-h-48 divide-y divide-slate-700/60 text-xs"></div>
     </div>
-  </section>
+  </div>
     <script>
     const FIREBASE_DATABASE_URL = "https://licoreria-la-union-default-rtdb.firebaseio.com/";
 
@@ -173,7 +175,7 @@
         db.ref('catalogo').on('value', (snapshot) => {
           catalog = snapshot.val() || {};
           renderStock();
-          document.getElementById('cloudStatus').textContent = "● Nube Activa (Multidispositivo)";
+          document.getElementById('cloudStatus').textContent = "● Sincronizado en Vivo";
         });
         db.ref('tasa').on('value', (snapshot) => {
           if (snapshot.val()) {
@@ -203,15 +205,15 @@
       const vC = document.getElementById('viewCarga');
 
       if (tab === 'venta') {
-        tV.className = "py-2 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
-        tC.className = "py-2 text-xs font-semibold rounded-lg text-slate-300";
-        vV.classList.remove('hidden');
-        vC.classList.add('hidden');
+        tV.className = "py-2.5 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
+        tC.className = "py-2.5 text-xs font-semibold rounded-lg text-slate-300";
+        vV.style.display = "flex";
+        vC.style.display = "none";
       } else {
-        tC.className = "py-2 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
-        tV.className = "py-2 text-xs font-semibold rounded-lg text-slate-300";
-        vV.classList.remove('hidden');
-        vC.classList.add('hidden');
+        tC.className = "py-2.5 text-xs font-black rounded-lg bg-amber-500 text-slate-950";
+        tV.className = "py-2.5 text-xs font-semibold rounded-lg text-slate-300";
+        vV.style.display = "none";
+        vC.style.display = "flex";
       }
     }
 

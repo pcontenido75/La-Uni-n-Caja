@@ -3,29 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>La Unión M&J - Caja POS</title>
+  <title>La Unión M&J - Escáner HD</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     #videoContainer { position: relative; background: #000; overflow: hidden; border-radius: 16px; }
-    #videoElement { width: 100%; height: 210px; object-fit: cover; }
-    .laser { position: absolute; top: 50%; left: 10%; right: 10%; height: 2px; background: #ef4444; box-shadow: 0 0 12px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
+    #videoElement { width: 100%; height: 230px; object-fit: cover; }
+    .laser { position: absolute; top: 50%; left: 5%; right: 5%; height: 2px; background: #ef4444; box-shadow: 0 0 10px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
+    .scan-area { position: absolute; top: 25%; bottom: 25%; left: 10%; right: 10%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-12">
 
-  <header class="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center justify-between sticky top-0 z-50">
+  <header class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center gap-2">
-      <span class="bg-amber-500 text-slate-950 font-black px-2 py-1 rounded text-sm">S1</span>
+      <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-sm">S1</span>
       <div>
         <h1 class="text-sm font-bold text-white leading-tight">La Unión M&J</h1>
-        <p class="text-[10px] text-slate-400">Escáner Continuo de Caja</p>
+        <p class="text-[10px] text-slate-400">Escáner HD de Alta Precisión</p>
       </div>
     </div>
-    <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
+    <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
       <span class="text-xs text-amber-400 font-semibold">Tasa Bs:</span>
-      <input id="rateInput" type="number" step="0.1" class="w-14 bg-transparent text-right text-xs font-bold text-white outline-none" value="65.0" onchange="updateRate()">
+      <input id="rateInput" type="number" step="0.1" class="w-16 bg-transparent text-right text-xs font-bold text-white outline-none" value="900" onchange="updateRate()">
     </div>
   </header>
 
@@ -42,16 +43,14 @@
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 shadow-lg">
       <div id="videoContainer">
         <video id="videoElement" autoplay playsinline muted></video>
-        <div id="laserLine" class="laser hidden"></div>
-        <div id="startOverlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center z-10">
-          <p class="text-xs text-slate-300 mb-3">Toca para iniciar el escáner continuo</p>
-          <button onclick="startContinuousScanner()" class="bg-amber-500 active:scale-95 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs shadow-lg">
-            ⚡ ABRIR CÁMARA CONTINUA
-          </button>
-        </div>
+        <div id="laserLine" class="laser"></div>
+        <div class="scan-area"></div>
       </div>
-      <div class="mt-2 px-1 text-[11px] text-center">
-        <span id="scanStatus" class="text-slate-400 font-medium">Cámara en espera...</span>
+      <div class="flex items-center justify-between mt-2 px-1 text-[11px]">
+        <span id="scanStatus" class="text-emerald-400 font-semibold">● Escaneando a 1080p HD...</span>
+        <button id="btnTorch" onclick="toggleTorch()" class="bg-slate-700 px-2.5 py-1 rounded-lg text-amber-300 font-bold hidden">
+          🔦 Linterna
+        </button>
       </div>
     </div>
   </section>
@@ -63,7 +62,7 @@
         <span>Cant. / Total</span>
       </div>
       <div id="cartList" class="flex-1 divide-y divide-slate-700/60 overflow-y-auto max-h-48 py-1">
-        <div class="text-center text-slate-500 text-xs py-8">Pasa las botellas frente al láser rojo sin tocar nada.</div>
+        <div class="text-center text-slate-500 text-xs py-8">Pasa los productos por el recuadro naranja.</div>
       </div>
       <div class="mt-2 pt-2 border-t border-slate-700 bg-slate-900/70 p-2.5 rounded-xl space-y-1">
         <div class="flex justify-between items-baseline">
@@ -84,14 +83,14 @@
 
   <section id="viewCarga" class="px-3 flex-1 flex flex-col hidden space-y-3">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3.5 space-y-3">
-      <p class="text-xs text-amber-400 font-bold uppercase">Pasa una botella por la cámara para registrarla</p>
+      <p class="text-xs text-amber-400 font-bold uppercase">Acerca el código pequeño para registrarlo</p>
       <div class="space-y-2">
         <div>
           <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código Escaneado</label>
           <input id="inCode" type="text" placeholder="Se llena solo al escanear..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
         </div>
         <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Licor / Bebida</label>
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Licor</label>
           <input id="inName" type="text" placeholder="Ej. Cacique 500 0.75L" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -108,20 +107,19 @@
       <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">GUARDAR EN EL CATÁLOGO</button>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
-      <span class="text-xs font-bold text-slate-300 mb-2">Catálogo Actual (<span id="countStock">0</span>)</span>
+      <span class="text-xs font-bold text-slate-300 mb-2">Catálogo Guardado (<span id="countStock">0</span>)</span>
       <div id="stockList" class="flex-1 overflow-y-auto max-h-48 divide-y divide-slate-700/60 text-xs"></div>
     </div>
   </section>
     <script>
     let codeReader = null;
-    let selectedDeviceId = null;
+    let currentStream = null;
+    let track = null;
+    let torchOn = false;
     let currentTab = 'venta';
-    let rate = parseFloat(localStorage.getItem('tasa_launion')) || 65.0;
+    let rate = parseFloat(localStorage.getItem('tasa_launion')) || 900.0;
 
-    let catalog = JSON.parse(localStorage.getItem('cat_launion')) || {
-      "7591011000123": { name: "Cerveza Polar Pilsen Lata 355ml", cost: 0.90, price: 1.25 },
-      "7591011000456": { name: "Ron Santa Teresa Linaje 0.75L", cost: 12.0, price: 16.50 }
-    };
+    let catalog = JSON.parse(localStorage.getItem('cat_launion')) || {};
     let cart = [];
 
     function beep() {
@@ -129,18 +127,19 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.frequency.value = 1000;
-        gain.gain.value = 0.2;
+        osc.frequency.value = 1050;
+        gain.gain.value = 0.25;
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
+        osc.stop(audioCtx.currentTime + 0.09);
       } catch (e) {}
     }
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('rateInput').value = rate;
       renderStock();
+      startHDScanner();
     });
 
     function updateRate() {
@@ -172,38 +171,71 @@
       }
     }
 
-    async function startContinuousScanner() {
-      const overlay = document.getElementById('startOverlay');
-      const laser = document.getElementById('laserLine');
+    // INICIAR CÁMARA CON ENFOQUE NATIVO Y FULL HD
+    async function startHDScanner() {
       const status = document.getElementById('scanStatus');
-      status.textContent = "Conectando cámara...";
+      const video = document.getElementById('videoElement');
+
+      const hints = new Map();
+      const formats = [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+
+      codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
       try {
-        codeReader = new ZXing.BrowserMultiFormatReader();
-        const videoInputDevices = await codeReader.listVideoInputDevices();
+        const constraints = {
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { min: 1280, ideal: 1920 },
+            height: { min: 720, ideal: 1080 },
+            focusMode: { ideal: "continuous" }
+          },
+          audio: false
+        };
 
-        if (videoInputDevices.length === 0) {
-          status.textContent = "No se detectó cámara.";
-          return;
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+        await video.play();
+
+        track = currentStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+        // Si el teléfono soporta linterna, mostrar el botón
+        if (capabilities.torch) {
+          document.getElementById('btnTorch').classList.remove('hidden');
         }
 
-        let backCamera = videoInputDevices.find(d => 
-          d.label.toLowerCase().includes('back') || 
-          d.label.toLowerCase().includes('trasera') || 
-          d.label.toLowerCase().includes('rear') ||
-          d.label.toLowerCase().includes('environment')
-        );
+        // Bucle continuo de lectura
+        codeReader.decodeFromVideoElement(video, (result) => {
+          if (result) {
+            handleScannedBarcode(result.getText());
+          }
+        });
 
-        selectedDeviceId = backCamera ? backCamera.deviceId : videoInputDevices[videoInputDevices.length - 1].deviceId;
-        overlay.classList.add('hidden');
-        laser.classList.remove('hidden');
-        status.innerHTML = `<span class="text-emerald-400 font-bold">● Lector Activo: Pasa las botellas</span>`;
-
-        codeReader.decodeFromVideoDevice(selectedDeviceId, 'videoElement', (result) => {
+      } catch (err) {
+        status.innerHTML = `<span class="text-amber-400">Modo estándar: ${err.message}</span>`;
+        // Fallback si la cámara no soporta resolución máxima forzada
+        codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
           if (result) handleScannedBarcode(result.getText());
         });
-      } catch (err) {
-        status.innerHTML = `<span class="text-red-400">Error: ${err.message || err.name}</span>`;
+      }
+    }
+
+    async function toggleTorch() {
+      if (track && track.applyConstraints) {
+        torchOn = !torchOn;
+        try {
+          await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+          document.getElementById('btnTorch').textContent = torchOn ? "🔦 Apagar" : "🔦 Linterna";
+        } catch (e) {}
       }
     }
 
@@ -212,7 +244,7 @@
 
     function handleScannedBarcode(code) {
       const now = Date.now();
-      if (code === lastCode && (now - lastTime) < 1200) return;
+      if (code === lastCode && (now - lastTime) < 1300) return;
       lastCode = code;
       lastTime = now;
       beep();
@@ -226,10 +258,10 @@
           if (exist) exist.qty++;
           else cart.push({ code: code, name: item.name, price: item.price, qty: 1 });
           renderCart();
-          status.innerHTML = `<span class="text-emerald-400 font-black">✔ Sumado: ${item.name} ($${item.price.toFixed(2)})</span>`;
+          status.innerHTML = `<span class="text-emerald-400 font-black">✔ Sumado: ${item.name}</span>`;
         } else {
-          status.innerHTML = `<span class="text-amber-400 font-bold">⚠ ${code} no registrado</span>`;
-          if (confirm(`El código [${code}] no está registrado. ¿Deseas agregarlo?`)) {
+          status.innerHTML = `<span class="text-amber-400 font-bold">⚠ Código no registrado (${code})</span>`;
+          if (confirm(`El código [${code}] no está guardado. ¿Deseas darlo de alta ahora?`)) {
             switchView('carga');
             document.getElementById('inCode').value = code;
             document.getElementById('inName').focus();
@@ -256,7 +288,7 @@
     function renderCart() {
       const list = document.getElementById('cartList');
       if (cart.length === 0) {
-        list.innerHTML = `<div class="text-center text-slate-500 text-xs py-8">Pasa las botellas frente al láser rojo sin tocar nada.</div>`;
+        list.innerHTML = `<div class="text-center text-slate-500 text-xs py-8">Pasa los productos por el recuadro naranja.</div>`;
         document.getElementById('txtUSD').textContent = "0.00";
         document.getElementById('txtBS').textContent = "0.00";
         return;

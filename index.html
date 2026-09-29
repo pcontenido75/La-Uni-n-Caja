@@ -122,6 +122,11 @@
     let catalog = JSON.parse(localStorage.getItem('cat_launion')) || {};
     let cart = [];
 
+    // Detector nativo de Android de alta velocidad si está disponible
+    const nativeBarcodeDetector = ('BarcodeDetector' in window) 
+      ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] }) 
+      : null;
+
     function beep() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -171,7 +176,6 @@
       }
     }
 
-    // INICIAR CÁMARA CON ENFOQUE NATIVO Y FULL HD
     async function startHDScanner() {
       const status = document.getElementById('scanStatus');
       const video = document.getElementById('videoElement');
@@ -195,8 +199,7 @@
           video: {
             facingMode: { ideal: "environment" },
             width: { min: 1280, ideal: 1920 },
-            height: { min: 720, ideal: 1080 },
-            focusMode: { ideal: "continuous" }
+            height: { min: 720, ideal: 1080 }
           },
           audio: false
         };
@@ -207,13 +210,24 @@
 
         track = currentStream.getVideoTracks()[0];
         const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-
-        // Si el teléfono soporta linterna, mostrar el botón
         if (capabilities.torch) {
           document.getElementById('btnTorch').classList.remove('hidden');
         }
 
-        // Bucle continuo de lectura
+        // Si Android tiene BarcodeDetector nativo, lo usamos en paralelo (lee vertical y horizontal)
+        if (nativeBarcodeDetector) {
+          setInterval(async () => {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+              try {
+                const barcodes = await nativeBarcodeDetector.detect(video);
+                if (barcodes.length > 0) {
+                  handleScannedBarcode(barcodes[0].rawValue);
+                }
+              } catch (e) {}
+            }
+          }, 150);
+        }
+
         codeReader.decodeFromVideoElement(video, (result) => {
           if (result) {
             handleScannedBarcode(result.getText());
@@ -221,8 +235,7 @@
         });
 
       } catch (err) {
-        status.innerHTML = `<span class="text-amber-400">Modo estándar: ${err.message}</span>`;
-        // Fallback si la cámara no soporta resolución máxima forzada
+        status.innerHTML = `<span class="text-amber-400">Iniciando lector estándar...</span>`;
         codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
           if (result) handleScannedBarcode(result.getText());
         });
@@ -406,4 +419,4 @@
     }
   </script>
 </body>
-</html>
+</html>          

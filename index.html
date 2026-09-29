@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>La Unión M&J - Escáner HD</title>
+  <title>La Unión M&J - Caja POS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     #videoContainer { position: relative; background: #000; overflow: hidden; border-radius: 16px; }
-    #videoElement { width: 100%; height: 230px; object-fit: cover; }
+    #videoElement { width: 100%; height: 190px; object-fit: cover; }
     .laser { position: absolute; top: 50%; left: 5%; right: 5%; height: 2px; background: #ef4444; box-shadow: 0 0 10px 2px #ef4444; transform: translateY(-50%); pointer-events: none; }
-    .scan-area { position: absolute; top: 25%; bottom: 25%; left: 10%; right: 10%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
+    .scan-area { position: absolute; top: 20%; bottom: 20%; left: 8%; right: 8%; border: 1.5px dashed rgba(245, 158, 11, 0.6); border-radius: 10px; pointer-events: none; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-12">
@@ -21,10 +21,10 @@
       <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-sm">S1</span>
       <div>
         <h1 class="text-sm font-bold text-white leading-tight">La Unión M&J</h1>
-        <p class="text-[10px] text-slate-400">Escáner HD de Alta Precisión</p>
+        <p class="text-[10px] text-slate-400">Punto de Venta Móvil</p>
       </div>
     </div>
-    <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700">
+    <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
       <span class="text-xs text-amber-400 font-semibold">Tasa Bs:</span>
       <input id="rateInput" type="number" step="0.1" class="w-16 bg-transparent text-right text-xs font-bold text-white outline-none" value="900" onchange="updateRate()">
     </div>
@@ -32,7 +32,7 @@
 
   <div class="grid grid-cols-2 bg-slate-800 p-1 mx-3 my-2 rounded-xl border border-slate-700">
     <button id="tabVenta" onclick="switchView('venta')" class="py-2 text-xs font-black rounded-lg bg-amber-500 text-slate-950">
-      🛒 CAJA REGISTRADORA
+      🛒 CAJA / VENTA
     </button>
     <button id="tabCarga" onclick="switchView('carga')" class="py-2 text-xs font-semibold rounded-lg text-slate-300">
       📦 AGREGAR PRODUCTOS
@@ -47,7 +47,7 @@
         <div class="scan-area"></div>
       </div>
       <div class="flex items-center justify-between mt-2 px-1 text-[11px]">
-        <span id="scanStatus" class="text-emerald-400 font-semibold">● Escaneando a 1080p HD...</span>
+        <span id="scanStatus" class="text-emerald-400 font-semibold">● Escáner continuo activo</span>
         <button id="btnTorch" onclick="toggleTorch()" class="bg-slate-700 px-2.5 py-1 rounded-lg text-amber-300 font-bold hidden">
           🔦 Linterna
         </button>
@@ -55,14 +55,23 @@
     </div>
   </section>
 
-  <main id="viewVenta" class="px-3 flex-1 flex flex-col">
+  <main id="viewVenta" class="px-3 flex-1 flex flex-col space-y-2">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-2 flex gap-2">
+      <input id="manualCodeInput" type="text" placeholder="Código o nombre (ej. 1, Polar...)" 
+             class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-amber-500"
+             onkeydown="if(event.key === 'Enter') addManualProduct()">
+      <button onclick="addManualProduct()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1.5 rounded-lg text-xs">
+        + Sumar
+      </button>
+    </div>
+
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
       <div class="flex justify-between items-center pb-2 border-b border-slate-700 text-[11px] text-slate-400 font-bold uppercase">
         <span>Producto</span>
         <span>Cant. / Total</span>
       </div>
-      <div id="cartList" class="flex-1 divide-y divide-slate-700/60 overflow-y-auto max-h-48 py-1">
-        <div class="text-center text-slate-500 text-xs py-8">Pasa los productos por el recuadro naranja.</div>
+      <div id="cartList" class="flex-1 divide-y divide-slate-700/60 overflow-y-auto max-h-44 py-1">
+        <div class="text-center text-slate-500 text-xs py-6">Pasa el producto por la cámara o escribe su código arriba.</div>
       </div>
       <div class="mt-2 pt-2 border-t border-slate-700 bg-slate-900/70 p-2.5 rounded-xl space-y-1">
         <div class="flex justify-between items-baseline">
@@ -74,7 +83,7 @@
           <span class="text-sm font-bold text-slate-200">Bs <span id="txtBS">0.00</span></span>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2 mt-2.5">
+      <div class="grid grid-cols-2 gap-2 mt-2">
         <button onclick="resetCart()" class="py-2.5 px-3 bg-slate-700 rounded-xl text-xs font-bold text-slate-300">Limpiar Todo</button>
         <button onclick="finishSale()" class="py-2.5 px-3 bg-emerald-600 rounded-xl text-xs font-black text-white shadow-lg">COBRAR</button>
       </div>
@@ -83,15 +92,21 @@
 
   <section id="viewCarga" class="px-3 flex-1 flex flex-col hidden space-y-3">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3.5 space-y-3">
-      <p class="text-xs text-amber-400 font-bold uppercase">Acerca el código pequeño para registrarlo</p>
+      <div class="flex justify-between items-center">
+        <p class="text-xs text-amber-400 font-bold uppercase">Registrar Producto</p>
+        <button onclick="generarCodigoSinBarra()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-amber-300 px-2 py-0.5 rounded-lg border border-slate-600">
+          ⚡ Sin Código de Barra
+        </button>
+      </div>
+
       <div class="space-y-2">
         <div>
-          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código Escaneado</label>
-          <input id="inCode" type="text" placeholder="Se llena solo al escanear..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
+          <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Código (Escanear o escribir número)</label>
+          <input id="inCode" type="text" placeholder="Ej. 1 para Caja de Cerveza o escanea..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-amber-300 outline-none">
         </div>
         <div>
           <label class="text-[11px] font-semibold text-slate-400 block mb-0.5">Nombre del Producto / Licor</label>
-          <input id="inName" type="text" placeholder="Ej. Cacique 500 0.75L" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+          <input id="inName" type="text" placeholder="Ej. Caja Polar Pilsen 36u / Ron Cacique" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -104,7 +119,9 @@
           </div>
         </div>
       </div>
-      <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">GUARDAR EN EL CATÁLOGO</button>
+      <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">
+        GUARDAR EN EL CATÁLOGO
+      </button>
     </div>
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex-1 flex flex-col">
       <span class="text-xs font-bold text-slate-300 mb-2">Catálogo Guardado (<span id="countStock">0</span>)</span>
@@ -119,10 +136,12 @@
     let currentTab = 'venta';
     let rate = parseFloat(localStorage.getItem('tasa_launion')) || 900.0;
 
-    let catalog = JSON.parse(localStorage.getItem('cat_launion')) || {};
+    let catalog = JSON.parse(localStorage.getItem('cat_launion')) || {
+      "1": { name: "Caja Polar Pilsen 36u", cost: 18.00, price: 22.00 },
+      "2": { name: "Bolsa de Hielo Grande", cost: 1.00, price: 2.00 }
+    };
     let cart = [];
 
-    // Detector nativo de Android de alta velocidad si está disponible
     const nativeBarcodeDetector = ('BarcodeDetector' in window) 
       ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] }) 
       : null;
@@ -214,7 +233,6 @@
           document.getElementById('btnTorch').classList.remove('hidden');
         }
 
-        // Si Android tiene BarcodeDetector nativo, lo usamos en paralelo (lee vertical y horizontal)
         if (nativeBarcodeDetector) {
           setInterval(async () => {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -235,7 +253,6 @@
         });
 
       } catch (err) {
-        status.innerHTML = `<span class="text-amber-400">Iniciando lector estándar...</span>`;
         codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
           if (result) handleScannedBarcode(result.getText());
         });
@@ -250,6 +267,38 @@
           document.getElementById('btnTorch').textContent = torchOn ? "🔦 Apagar" : "🔦 Linterna";
         } catch (e) {}
       }
+    }
+
+    function addManualProduct() {
+      const input = document.getElementById('manualCodeInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      if (catalog[val]) {
+        handleScannedBarcode(val);
+        input.value = "";
+        return;
+      }
+
+      const foundCode = Object.keys(catalog).find(k => 
+        catalog[k].name.toLowerCase().includes(val.toLowerCase())
+      );
+
+      if (foundCode) {
+        handleScannedBarcode(foundCode);
+        input.value = "";
+      } else {
+        alert(`No se encontró el producto: "${val}"`);
+      }
+    }
+
+    function generarCodigoSinBarra() {
+      let nextId = 1;
+      while (catalog[nextId.toString()]) {
+        nextId++;
+      }
+      document.getElementById('inCode').value = nextId;
+      document.getElementById('inName').focus();
     }
 
     let lastCode = "";
@@ -274,7 +323,7 @@
           status.innerHTML = `<span class="text-emerald-400 font-black">✔ Sumado: ${item.name}</span>`;
         } else {
           status.innerHTML = `<span class="text-amber-400 font-bold">⚠ Código no registrado (${code})</span>`;
-          if (confirm(`El código [${code}] no está guardado. ¿Deseas darlo de alta ahora?`)) {
+          if (confirm(`El código [${code}] no está guardado. ¿Deseas agregarlo?`)) {
             switchView('carga');
             document.getElementById('inCode').value = code;
             document.getElementById('inName').focus();
@@ -301,7 +350,7 @@
     function renderCart() {
       const list = document.getElementById('cartList');
       if (cart.length === 0) {
-        list.innerHTML = `<div class="text-center text-slate-500 text-xs py-8">Pasa los productos por el recuadro naranja.</div>`;
+        list.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">Pasa el producto por la cámara o escribe su código arriba.</div>`;
         document.getElementById('txtUSD').textContent = "0.00";
         document.getElementById('txtBS').textContent = "0.00";
         return;
@@ -315,7 +364,7 @@
           <div class="py-2 flex items-center justify-between text-xs">
             <div class="truncate pr-2">
               <p class="font-bold text-white truncate">${item.name}</p>
-              <p class="text-[10px] text-slate-400 font-mono">${item.code} | $${item.price.toFixed(2)} c/u</p>
+              <p class="text-[10px] text-slate-400 font-mono">Cód: ${item.code} | $${item.price.toFixed(2)} c/u</p>
             </div>
             <div class="flex items-center gap-1.5">
               <button onclick="modifyQty(${idx}, -1)" class="w-6 h-6 rounded bg-slate-700 text-slate-200 font-black">-</button>
@@ -375,7 +424,7 @@
       catalog[code] = { name, cost, price };
       localStorage.setItem('cat_launion', JSON.stringify(catalog));
       beep();
-      alert(`Guardado: ${name}`);
+      alert(`Guardado: ${name} (Código: ${code})`);
       document.getElementById('inCode').value = "";
       document.getElementById('inName').value = "";
       document.getElementById('inCost').value = "";
@@ -407,7 +456,7 @@
           <div class="py-2 flex items-center justify-between text-xs">
             <div class="truncate pr-2">
               <p class="font-bold text-slate-200 truncate">${item.name}</p>
-              <p class="text-[10px] text-slate-400 font-mono">${k} | Costo: $${item.cost ? item.cost.toFixed(2) : '0.00'}</p>
+              <p class="text-[10px] text-slate-400 font-mono">Cód: ${k} | Costo: $${item.cost ? item.cost.toFixed(2) : '0.00'}</p>
             </div>
             <div class="flex items-center gap-2">
               <span class="font-black text-amber-400">$${item.price.toFixed(2)}</span>
@@ -419,4 +468,4 @@
     }
   </script>
 </body>
-</html>          
+</html>

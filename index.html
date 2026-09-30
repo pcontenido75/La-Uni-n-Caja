@@ -44,7 +44,7 @@
   <section class="px-3 mb-2">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 shadow-lg">
       <div id="videoContainer">
-        <video id="videoElement" autoplay playsinline muted></video>
+        <video id="videoElement" autoplay playsinline webkit-playsinline muted></video>
         <div id="laserLine" class="laser"></div>
         <div class="scan-area"></div>
       </div>
@@ -93,7 +93,7 @@
     </div>
   </div>
 
-  <!-- VISTA 2: AGREGAR PRODUCTOS (FORMULARIO EXACTO COMO ANTES) -->
+  <!-- VISTA 2: AGREGAR PRODUCTOS -->
   <div id="viewCarga" class="px-3 flex flex-col space-y-3" style="display: none;">
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3.5 space-y-3">
       <div class="flex justify-between items-center">
@@ -123,17 +123,24 @@
           </div>
         </div>
       </div>
-      <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow">
-        GUARDAR EN EL CATÁLOGO
+      
+      <button onclick="saveItem()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase tracking-wide">
+        Guardar en el Catálogo
       </button>
     </div>
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col">
-      <span class="text-xs font-bold text-slate-300 mb-2">Catálogo Guardado (<span id="countStock">0</span>)</span>
-      <div id="stockList" class="overflow-y-auto max-h-48 divide-y divide-slate-700/60 text-xs"></div>
+
+    <!-- Catálogo Registrado -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-700 text-xs text-slate-400 font-bold">
+        <span>PRODUCTOS GUARDADOS</span>
+        <span id="countStock" class="bg-slate-900 px-2 py-0.5 rounded text-amber-400">0</span>
+      </div>
+      <div id="stockList" class="divide-y divide-slate-700/60 overflow-y-auto max-h-48 py-1"></div>
     </div>
   </div>
-    <script>
-    const FIREBASE_DATABASE_URL = "https://licoreria-la-union-default-rtdb.firebaseio.com/";
+
+  <script>
+        const FIREBASE_DATABASE_URL = "https://licoreria-la-union-default-rtdb.firebaseio.com/";
 
     let db = null;
     try {
@@ -152,21 +159,31 @@
     let catalog = {};
     let cart = [];
 
-    const nativeBarcodeDetector = ('BarcodeDetector' in window) 
-      ? new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39'] }) 
-      : null;
+    // Audio optimizado para iPhone (Safari) y Android
+    let audioCtx = null;
+    function unlockAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
 
     function beep() {
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        unlockAudio();
+        if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.frequency.value = 1050;
-        gain.gain.value = 0.25;
+        osc.frequency.value = 1200;
+        gain.gain.value = 0.3;
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.09);
+        osc.stop(audioCtx.currentTime + 0.12);
       } catch (e) {}
     }
 
@@ -218,49 +235,59 @@
     }
 
     async function startHDScanner() {
-      const video = document.getElementById('videoElement');
       const hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-        ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39
       ]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
       codeReader = new ZXing.BrowserMultiFormatReader(hints);
 
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { min: 1280, ideal: 1920 } },
-          audio: false
-        });
-        video.srcObject = currentStream;
-        await video.play();
+        const videoElement = document.getElementById('videoElement');
 
-        track = currentStream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-        if (capabilities.torch) {
-          document.getElementById('btnTorch').classList.remove('hidden');
-        }
-
-        if (nativeBarcodeDetector) {
-          setInterval(async () => {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-              try {
-                const barcodes = await nativeBarcodeDetector.detect(video);
-                if (barcodes.length > 0) handleScannedBarcode(barcodes[0].rawValue);
-              } catch (e) {}
+        await codeReader.decodeFromConstraints(
+          {
+            audio: false,
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { min: 640, ideal: 1280, max: 1920 },
+              height: { min: 480, ideal: 720, max: 1080 }
             }
-          }, 150);
-        }
+          },
+          videoElement,
+          (result, error) => {
+            if (result) {
+              handleScannedBarcode(result.getText());
+            }
+          }
+        );
 
-        codeReader.decodeFromVideoElement(video, (result) => {
-          if (result) handleScannedBarcode(result.getText());
-        });
+        setTimeout(() => {
+          if (videoElement.srcObject) {
+            const tracks = videoElement.srcObject.getVideoTracks();
+            if (tracks.length > 0) {
+              track = tracks[0];
+              const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+              if (capabilities.torch) {
+                document.getElementById('btnTorch').classList.remove('hidden');
+              }
+            }
+          }
+        }, 800);
+
       } catch (err) {
-        codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
-          if (result) handleScannedBarcode(result.getText());
-        });
+        console.warn("Fallo modo continuo, intentando modo alternativo:", err);
+        try {
+          codeReader.decodeFromVideoDevice(null, 'videoElement', (result) => {
+            if (result) handleScannedBarcode(result.getText());
+          });
+        } catch (e2) {}
       }
     }
 
@@ -311,7 +338,7 @@
 
     function handleScannedBarcode(code) {
       const now = Date.now();
-      if (code === lastCode && (now - lastTime) < 1300) return;
+      if (code === lastCode && (now - lastTime) < 1500) return;
       lastCode = code;
       lastTime = now;
       beep();
